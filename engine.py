@@ -1,6 +1,6 @@
 class engine:
     def __init__(self):
-        self.turn = 0  # 0 for White, 1 for Black
+        self.turn = 0  
         self.board = []
         l = ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r']
         self.board.append(l)
@@ -40,7 +40,7 @@ class engine:
         d = ord(move[3]) - ord('1')
         self.board[7 - d][c] = self.board[7 - b][a]
         self.board[7 - b][a] = " "
-        self.turn = 1 - self.turn  # Toggle turn between 0 (White) and 1 (Black)
+        self.turn = 1 - self.turn  
 
    
     def _convert_move(self, start_col, start_row, end_col, end_row):
@@ -61,6 +61,5 @@ class engine:
             else:
                 print("Invalid move. Please enter a valid move.")
 
-# To start the game:
 az = engine()
 az.play()
