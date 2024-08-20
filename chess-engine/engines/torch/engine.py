@@ -12,7 +12,7 @@ def set_input(board: Board):
     X_tensor = torch.tensor(board_matrix, dtype=torch.float32).unsqueeze(0)
     return X_tensor
 
-with open("PawnStorm/chess-engine/models/move_to_int", "rb") as file:
+with open("chess-engine/models/move_to_int", "rb") as file:
     move_to_int = pickle.load(file)
 
 if torch.backends.mps.is_available():
@@ -26,7 +26,7 @@ else:
     print("Using CPU")
 print(f'Using device: {device}')
 model = ChessModel(num_classes=len(move_to_int))
-model.load_state_dict(torch.load("PawnStorm/chess-engine/models/final_model.pth", map_location=device))
+model.load_state_dict(torch.load("chess-engine/models/final_model.pth", map_location=device))
 model.to(device)
 model.eval()
 
@@ -34,17 +34,19 @@ int_to_move = {v: k for k, v in move_to_int.items()}
 
 class Engine:
     def __init__(self, model, int_to_move, device):
-        self.turn = 0 
+        self.turn = 0
         self.model = model
         self.int_to_move = int_to_move
         self.device = device
         self.chess_board = Board()
+        self.pgn_moves = []
 
     def visualize_board(self):
         print(self.chess_board)
 
     def make_move(self, move):
         self.chess_board.push_uci(move)
+        self.pgn_moves.append(move)
         self.turn = 1 - self.turn
 
     def predict_move(self):
@@ -65,7 +67,7 @@ class Engine:
     def play(self):
         self.visualize_board()
 
-        if self.turn == 0:  
+        if self.turn == 0:
             legal_moves = list(self.chess_board.legal_moves)
             first_move = random.choice(legal_moves).uci()
             print(f"Random first move: {first_move}")
@@ -75,7 +77,6 @@ class Engine:
         while not self.chess_board.is_game_over():
             self.whose_turn()
             predicted_move = self.predict_move()
-            time.sleep(5)
 
             if predicted_move:
                 print(f"Predicted move: {predicted_move}")
@@ -87,6 +88,7 @@ class Engine:
 
         print("Game Over")
         print("Result:", self.chess_board.result())
+        self.save_pgn()
 
     def whose_turn(self):
         if self.turn:
@@ -94,6 +96,13 @@ class Engine:
         else:
             print("White's turn")
 
+    def save_pgn(self):
+        pgn_header = f"[Event \"Engine Game\"]\n[Site \"Local\"]\n[Date \"{time.strftime('%Y.%m.%d')}\"]\n[Round \"1\"]\n[White \"Engine\"]\n[Black \"Opponent\"]\n[Result \"{self.chess_board.result()}\"]\n\n"
+        pgn_moves = " ".join(self.pgn_moves)
+        pgn_content = pgn_header + pgn_moves + " " + self.chess_board.result()
+        with open("game.pgn", "w") as pgn_file:
+            pgn_file.write(pgn_content)
+        print("PGN saved to game.pgn")
+
 az = Engine(model, int_to_move, device)
 az.play()
-
