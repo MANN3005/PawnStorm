@@ -1,11 +1,9 @@
-import random
 import torch
 from chess import Board
 from model import ChessModel
 from auxiliary_func import board_to_matrix
 import pickle
 import numpy as np
-import time
 
 def set_input(board: Board):
     board_matrix = board_to_matrix(board)
@@ -32,22 +30,37 @@ model.eval()
 
 int_to_move = {v: k for k, v in move_to_int.items()}
 
-class Engine:
+class UCIEngine:
     def __init__(self, model, int_to_move, device):
-        self.turn = 0
         self.model = model
         self.int_to_move = int_to_move
         self.device = device
         self.chess_board = Board()
-        self.pgn_moves = []
 
-    def visualize_board(self):
-        print(self.chess_board)
+    def display_welcome_message(self):
+        print("Welcome to MyChessEngine!")
+        print("Commands:")
+        print(" - 'uci': Initialize the UCI engine")
+        print(" - 'isready': Check if the engine is ready")
+        print(" - 'position [startpos | fen <FEN_STRING>] moves <MOVE_LIST>': Set up the board position")
+        print(" - 'go': Let the engine predict the best move")
+        print(" - 'quit': Exit the engine")
 
-    def make_move(self, move):
-        self.chess_board.push_uci(move)
-        self.pgn_moves.append(move)
-        self.turn = 1 - self.turn
+    def set_position(self, position_command):
+        """Sets the board position based on the UCI 'position' command."""
+        self.chess_board = Board()
+        tokens = position_command.split()
+        if 'startpos' in tokens:
+            moves_start_index = tokens.index('startpos') + 2  
+        elif 'fen' in tokens:
+            fen_string = " ".join(tokens[1:7])
+            self.chess_board.set_fen(fen_string)
+            moves_start_index = tokens.index('moves') + 1 if 'moves' in tokens else len(tokens)
+        else:
+            return  
+
+        for move in tokens[moves_start_index:]:
+            self.chess_board.push_uci(move)
 
     def predict_move(self):
         X_tensor = set_input(self.chess_board).to(self.device)
@@ -64,45 +77,32 @@ class Engine:
                 return move
         return None
 
-    def play(self):
-        self.visualize_board()
-
-        if self.turn == 0:
-            legal_moves = list(self.chess_board.legal_moves)
-            first_move = random.choice(legal_moves).uci()
-            print(f"Random first move: {first_move}")
-            self.make_move(first_move)
-            self.visualize_board()
-
-        while not self.chess_board.is_game_over():
-            self.whose_turn()
-            predicted_move = self.predict_move()
-
-            if predicted_move:
-                print(f"Predicted move: {predicted_move}")
-                self.make_move(predicted_move)
-                self.visualize_board()
-            else:
-                print("No valid move predicted.")
+    def uci_loop(self):
+        self.display_welcome_message()  # Display welcome message when the loop starts
+        while True:
+            command = input("Enter command: ").strip()  # Prompt the user for input
+            if command == "uci":
+                self.handle_uci()
+            elif command == "isready":
+                print("readyok")
+            elif command.startswith("position"):
+                self.set_position(command)
+            elif command.startswith("go"):
+                best_move = self.predict_move()
+                if best_move:
+                    print(f"bestmove {best_move}")
+                else:
+                    print("bestmove 0000")  # In case no move is found
+            elif command == "quit":
+                print("Exiting MyChessEngine. Goodbye!")
                 break
+            else:
+                print("Unknown command. Please try again or enter 'quit' to exit.")
 
-        print("Game Over")
-        print("Result:", self.chess_board.result())
-        self.save_pgn()
+    def handle_uci(self):
+        print("id name MyChessEngine")
+        print("id author Your Name")
+        print("uciok")
 
-    def whose_turn(self):
-        if self.turn:
-            print("Black's turn")
-        else:
-            print("White's turn")
-
-    def save_pgn(self):
-        pgn_header = f"[Event \"Engine Game\"]\n[Site \"Local\"]\n[Date \"{time.strftime('%Y.%m.%d')}\"]\n[Round \"1\"]\n[White \"Engine\"]\n[Black \"Opponent\"]\n[Result \"{self.chess_board.result()}\"]\n\n"
-        pgn_moves = " ".join(self.pgn_moves)
-        pgn_content = pgn_header + pgn_moves + " " + self.chess_board.result()
-        with open("game.pgn", "w") as pgn_file:
-            pgn_file.write(pgn_content)
-        print("PGN saved to game.pgn")
-
-az = Engine(model, int_to_move, device)
-az.play()
+uci_engine = UCIEngine(model, int_to_move, device)
+uci_engine.uci_loop()
