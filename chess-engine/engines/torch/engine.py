@@ -30,79 +30,54 @@ model.eval()
 
 int_to_move = {v: k for k, v in move_to_int.items()}
 
-class UCIEngine:
-    def __init__(self, model, int_to_move, device):
-        self.model = model
-        self.int_to_move = int_to_move
-        self.device = device
-        self.chess_board = Board()
+def predict_move(board):
+    X_tensor = set_input(board).to(device)
+    with torch.no_grad():
+        logits = model(X_tensor)
+    logits = logits.squeeze(0)
+    probabilities = torch.softmax(logits, dim=0).cpu().numpy()
+    legal_moves = list(board.legal_moves)
+    legal_moves_uci = [move.uci() for move in legal_moves]
+    sorted_indices = np.argsort(probabilities)[::-1]
+    for move_index in sorted_indices:
+        move = int_to_move[move_index]
+        if move in legal_moves_uci:
+            return move
+    return None
 
-    def display_welcome_message(self):
-        print("Welcome to MyChessEngine!")
-        print("Commands:")
-        print(" - 'uci': Initialize the UCI engine")
-        print(" - 'isready': Check if the engine is ready")
-        print(" - 'position [startpos | fen <FEN_STRING>] moves <MOVE_LIST>': Set up the board position")
-        print(" - 'go': Let the engine predict the best move")
-        print(" - 'quit': Exit the engine")
+def uci_loop():
+    board = Board()
 
-    def set_position(self, position_command):
-        """Sets the board position based on the UCI 'position' command."""
-        self.chess_board = Board()
-        tokens = position_command.split()
-        if 'startpos' in tokens:
-            moves_start_index = tokens.index('startpos') + 2  
-        elif 'fen' in tokens:
-            fen_string = " ".join(tokens[1:7])
-            self.chess_board.set_fen(fen_string)
-            moves_start_index = tokens.index('moves') + 1 if 'moves' in tokens else len(tokens)
-        else:
-            return  
-
-        for move in tokens[moves_start_index:]:
-            self.chess_board.push_uci(move)
-
-    def predict_move(self):
-        X_tensor = set_input(self.chess_board).to(self.device)
-        with torch.no_grad():
-            logits = self.model(X_tensor)
-        logits = logits.squeeze(0)
-        probabilities = torch.softmax(logits, dim=0).cpu().numpy()
-        legal_moves = list(self.chess_board.legal_moves)
-        legal_moves_uci = [move.uci() for move in legal_moves]
-        sorted_indices = np.argsort(probabilities)[::-1]
-        for move_index in sorted_indices:
-            move = self.int_to_move[move_index]
-            if move in legal_moves_uci:
-                return move
-        return None
-
-    def uci_loop(self):
-        self.display_welcome_message()  # Display welcome message when the loop starts
-        while True:
-            command = input("Enter command: ").strip()  # Prompt the user for input
-            if command == "uci":
-                self.handle_uci()
-            elif command == "isready":
-                print("readyok")
-            elif command.startswith("position"):
-                self.set_position(command)
-            elif command.startswith("go"):
-                best_move = self.predict_move()
-                if best_move:
-                    print(f"bestmove {best_move}")
-                else:
-                    print("bestmove 0000")  # In case no move is found
-            elif command == "quit":
-                print("Exiting MyChessEngine. Goodbye!")
-                break
+    while True:
+        command = input("Enter command: ").strip()
+        if command == "uci":
+            print("id name MyChessEngine")
+            print("id author Your Name")
+            print("uciok")
+        elif command == "isready":
+            print("readyok")
+        elif command.startswith("position"):
+            tokens = command.split()
+            if 'startpos' in tokens:
+                board = Board()
+                moves_start_index = tokens.index('startpos') + 2
+            elif 'fen' in tokens:
+                fen_string = " ".join(tokens[1:7])
+                board = Board(fen_string)
+                moves_start_index = tokens.index('moves') + 1 if 'moves' in tokens else len(tokens)
+            for move in tokens[moves_start_index:]:
+                board.push_uci(move)
+        elif command.startswith("go"):
+            best_move = predict_move(board)
+            if best_move:
+                print(f"bestmove {best_move}")
             else:
-                print("Unknown command. Please try again or enter 'quit' to exit.")
+                print("bestmove 0000")  # In case no move is found
+        elif command == "quit":
+            print("Exiting MyChessEngine. Goodbye!")
+            break
+        else:
+            print("Unknown command. Please try again or enter 'quit' to exit.")
 
-    def handle_uci(self):
-        print("id name MyChessEngine")
-        print("id author Your Name")
-        print("uciok")
-
-uci_engine = UCIEngine(model, int_to_move, device)
-uci_engine.uci_loop()
+if __name__ == "__main__":
+    uci_loop()
