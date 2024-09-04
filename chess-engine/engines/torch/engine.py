@@ -51,9 +51,14 @@ def uci_loop():
     while True:
         command = input("Enter command: ").strip()
         if command == "uci":
-            print("id name MyChessEngine")
-            print("id author Your Name")
+            print("id author YourName")
+            print("option name Hash type spin default 128 min 1 max 131072")
+            print("option name Threads type spin default 1 min 1 max 8")
             print("uciok")
+        elif command == "ucinewgame":
+            board = chess.Board()
+            best_move = None
+      
         elif command == "isready":
             print("readyok")
         elif command.startswith("position"):
@@ -72,7 +77,7 @@ def uci_loop():
             if best_move:
                 print(f"bestmove {best_move}")
             else:
-                print("bestmove 0000")  # In case no move is found
+                print("bestmove 0000")  
         elif command == "quit":
             print("Exiting MyChessEngine. Goodbye!")
             break
