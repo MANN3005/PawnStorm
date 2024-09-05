@@ -50,6 +50,19 @@
 
    The PGN file will be saved as `game.pgn` in the root directory. You can upload this file to platforms like Chess.com or Lichess.org for visualization and analysis.
 
+### Model Architecture
+
+   The machine learning model created in PawnStorm follows this architecture:
+
+   Convolution layer 1 -> ReLU Activation -> Convolution layer 2 -> ReLU Activation -> Flatten -> Fully Connected Layer 1 -> ReLU Activation -> Fully connected layer 2
+
+
+### Program Output Screenshot
+
+   Here, when we type the command go the best move is predicted by the chess engine during the game and below is the output for it.
+   For example: The first best move predicted by the chess engine is e2e4 and the second best move is c7c5 as shown in the screenshot below.
+   ![alt text](images/output.png)
+
 
 ### Code Overview
 
@@ -60,8 +73,10 @@
 
 ### Contributing
 
-Contributions are welcome! Please follow the guidelines in `CONTRIBUTING.md` for submitting issues or pull requests.
-
+   Contributions are welcome! Follow these steps to contribute:
+   1. Fork the repository.
+   2. Create a new branch for your feature.
+   3. Submit a pull request with a detailed description.
 ### Contact
 
 For any questions or support, please open an issue in the repository.
