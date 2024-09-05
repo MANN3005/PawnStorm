@@ -61,7 +61,7 @@
 
    Here, when we type the command go the best move is predicted by the chess engine during the game and below is the output for it.
    For example: The first best move predicted by the chess engine is e2e4 and the second best move is c7c5 as shown in the screenshot below.
-   ![alt text](https://github.com/MANN3005/PawnStorm/blob/main/images/output.png)
+   ![alt text](images/output.png)
 
 
 ### Code Overview
